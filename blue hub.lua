@@ -39,6 +39,7 @@ local SpeedSlider = UPTab:CreateSlider({
    game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = Value
    end,
 })
+
 local JumpSection = UPTab:CreateSection("changes your jumppower")
 local JumpSlider = UPTab:CreateSlider({
    Name = "jumppower",
@@ -54,7 +55,7 @@ local JumpSlider = UPTab:CreateSlider({
 
 local HipHeightSection = UPTab:CreateSection("changes your hipheight")
 local HipHeightSlider = UPTab:CreateSlider({
-   Name = "jumppower",
+   Name = "hipheight",
    Range = {0, 500},
    Increment = 1,
    Suffix = "",
