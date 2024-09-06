@@ -51,3 +51,16 @@ local JumpSlider = UPTab:CreateSlider({
    game.Players.LocalPlayer.Character.Humanoid.JumpPower = Value
    end,
 })
+
+local HipHeightSection = UPTab:CreateSection("changes your hipheight")
+local HipHeightSlider = UPTab:CreateSlider({
+   Name = "jumppower",
+   Range = {0, 500},
+   Increment = 1,
+   Suffix = "",
+   CurrentValue = 0,
+   Flag = "Slider1", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+   Callback = function(Value)
+   game.Players.LocalPlayer.Character.Humanoid.HipHeight = Value
+   end,
+})
