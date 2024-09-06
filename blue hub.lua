@@ -65,3 +65,11 @@ local HipHeightSlider = UPTab:CreateSlider({
    game.Players.LocalPlayer.Character.Humanoid.HipHeight = Value
    end,
 })
+
+local ResetSection = UPTab:CreateSection("kills you (ingame)")
+local ResetButton = UPTab:CreateButton({
+   Name = "reset",
+   Callback = function()
+   game.Players.LocalPlayer.Humanoid.Health = 0
+   end,
+})
