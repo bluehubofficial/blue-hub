@@ -70,6 +70,6 @@ local ResetSection = UPTab:CreateSection("kills you (ingame)")
 local ResetButton = UPTab:CreateButton({
    Name = "reset",
    Callback = function()
-   game.Players.LocalPlayer.Humanoid.Health = 0
+   game.Players.LocalPlayer.Character.Humanoid.Health = 0
    end,
 })
