@@ -6,14 +6,14 @@ local altAccountUsername = "887Q" -- Replace with your alt account's username
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
--- Function to teleport the alt account closer behind the target player
+-- Function to teleport the alt account behind the target player
 local function teleportBehindTarget(altCharacter, targetCharacter)
     local targetHRP = targetCharacter:FindFirstChild("HumanoidRootPart")
     local altHRP = altCharacter:FindFirstChild("HumanoidRootPart")
 
     if targetHRP and altHRP then
-        -- Position the alt account closer behind the target (closer than before)
-        local behindPosition = targetHRP.CFrame * CFrame.new(0, 0, 2) -- 2 studs behind the target
+        -- Calculate the position behind the target player
+        local behindPosition = targetHRP.CFrame * CFrame.new(0, 0, 3)
         altHRP.CFrame = behindPosition
     end
 end
@@ -29,38 +29,12 @@ local function playAnimation(altCharacter, isR15)
             local track = humanoid:LoadAnimation(animation)
             track:Play()
         else
-            -- R6 animation (ID: 148831003) with 5x speed
+            -- R6 custom animation (replace with your own animation ID)
             local animation = Instance.new("Animation")
-            animation.AnimationId = "rbxassetid://148831003" -- R6 Animation ID
+            animation.AnimationId = "rbxassetid://507771019" -- Example animation for R6 (change as needed)
             local track = humanoid:LoadAnimation(animation)
             track:Play()
-            track:AdjustSpeed(5) -- Speed up the animation 5x
         end
-    end
-end
-
--- Function to handle the "!bang" command and continuously teleport the alt account
-local function startTeleportLoop(targetPlayer, altPlayer)
-    local targetCharacter = targetPlayer.Character
-    local altCharacter = altPlayer.Character
-
-    if targetCharacter and altCharacter then
-        local humanoid = altCharacter:FindFirstChild("Humanoid")
-        local isR15 = humanoid and humanoid.RigType == Enum.HumanoidRigType.R15
-
-        -- Play the animation once at the start
-        playAnimation(altCharacter, isR15)
-
-        -- Continuously teleport behind the target
-        local connection
-        connection = RunService.Heartbeat:Connect(function()
-            if targetCharacter and altCharacter then
-                teleportBehindTarget(altCharacter, targetCharacter)
-            else
-                -- Stop the loop if characters are not found
-                connection:Disconnect()
-            end
-        end)
     end
 end
 
@@ -83,14 +57,28 @@ local function onPlayerChatted(player, message)
                     if mainHRP and altHRP then
                         altHRP.CFrame = mainHRP.CFrame
                     end
-
                 -- Handle "!bang (player)" command
                 elseif string.sub(message:lower(), 1, 6) == "!bang " then
                     local targetUsername = string.sub(message, 7)
                     local targetPlayer = Players:FindFirstChild(targetUsername)
 
                     if targetPlayer and targetPlayer.Character then
-                        startTeleportLoop(targetPlayer, altPlayer)
+                        local targetCharacter = targetPlayer.Character
+                        local altHRP = altCharacter:FindFirstChild("HumanoidRootPart")
+
+                        -- Detect if the alt account is using R15 or R6
+                        local humanoid = altCharacter:FindFirstChild("Humanoid")
+                        local isR15 = humanoid and humanoid.RigType == Enum.HumanoidRigType.R15
+
+                        -- Loop to keep teleporting the alt account behind the target player
+                        RunService.Stepped:Connect(function()
+                            if altCharacter and targetCharacter then
+                                teleportBehindTarget(altCharacter, targetCharacter)
+                            end
+                        end)
+
+                        -- Play the appropriate animation once after teleporting
+                        playAnimation(altCharacter, isR15)
                     end
                 end
             end
@@ -105,7 +93,7 @@ Players.PlayerAdded:Connect(function(player)
     end)
 end)
 
--- For players already in the game when the script runs
+-- For players already in the game when the script runs (optional)
 for _, player in pairs(Players:GetPlayers()) do
     player.Chatted:Connect(function(message)
         onPlayerChatted(player, message)
