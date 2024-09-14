@@ -13,7 +13,7 @@ local function teleportBehindTarget(altCharacter, targetCharacter)
 
     if targetHRP and altHRP then
         -- Position the alt account closer behind the target (closer than before)
-        local behindPosition = targetHRP.CFrame * CFrame.new(0, 0, 2) -- 2 studs behind the target (adjust this to get closer or farther)
+        local behindPosition = targetHRP.CFrame * CFrame.new(0, 0, 2) -- 2 studs behind the target
         altHRP.CFrame = behindPosition
     end
 end
@@ -39,6 +39,31 @@ local function playAnimation(altCharacter, isR15)
     end
 end
 
+-- Function to handle the "!bang" command and continuously teleport the alt account
+local function startTeleportLoop(targetPlayer, altPlayer)
+    local targetCharacter = targetPlayer.Character
+    local altCharacter = altPlayer.Character
+
+    if targetCharacter and altCharacter then
+        local humanoid = altCharacter:FindFirstChild("Humanoid")
+        local isR15 = humanoid and humanoid.RigType == Enum.HumanoidRigType.R15
+
+        -- Play the animation once at the start
+        playAnimation(altCharacter, isR15)
+
+        -- Continuously teleport behind the target
+        local connection
+        connection = RunService.Heartbeat:Connect(function()
+            if targetCharacter and altCharacter then
+                teleportBehindTarget(altCharacter, targetCharacter)
+            else
+                -- Stop the loop if characters are not found
+                connection:Disconnect()
+            end
+        end)
+    end
+end
+
 -- Function to handle chat message
 local function onPlayerChatted(player, message)
     if player.Name == mainAccountUsername then
@@ -58,28 +83,14 @@ local function onPlayerChatted(player, message)
                     if mainHRP and altHRP then
                         altHRP.CFrame = mainHRP.CFrame
                     end
+
                 -- Handle "!bang (player)" command
                 elseif string.sub(message:lower(), 1, 6) == "!bang " then
                     local targetUsername = string.sub(message, 7)
                     local targetPlayer = Players:FindFirstChild(targetUsername)
 
                     if targetPlayer and targetPlayer.Character then
-                        local targetCharacter = targetPlayer.Character
-                        local altHRP = altCharacter:FindFirstChild("HumanoidRootPart")
-
-                        -- Detect if the alt account is using R15 or R6
-                        local humanoid = altCharacter:FindFirstChild("Humanoid")
-                        local isR15 = humanoid and humanoid.RigType == Enum.HumanoidRigType.R15
-
-                        -- Loop to keep teleporting the alt account behind the target player
-                        RunService.Stepped:Connect(function()
-                            if altCharacter and targetCharacter then
-                                teleportBehindTarget(altCharacter, targetCharacter)
-                            end
-                        end)
-
-                        -- Play the appropriate animation once after teleporting
-                        playAnimation(altCharacter, isR15)
+                        startTeleportLoop(targetPlayer, altPlayer)
                     end
                 end
             end
