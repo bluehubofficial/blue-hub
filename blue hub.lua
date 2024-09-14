@@ -73,3 +73,75 @@ local ResetButton = UPTab:CreateButton({
    game.Players.LocalPlayer.Character.Humanoid.Health = 0
    end,
 })
+
+local ESPSection = UPTab:CreateSection("highlights all the players")
+local ESPToggle = UPTab:CreateToggle({
+   Name = "esp",
+   CurrentValue = false,
+   Flag = "Toggle1", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+   Callback = function(Value)
+   -- LocalScript in StarterPlayerScripts or StarterCharacterScripts
+
+-- Define a global environment toggle
+getgenv().highlightToggle = Value; -- Set initial state to true or false
+
+-- Function to add highlight to a player
+local function highlightPlayer(player)
+    local character = player.Character
+    if character then
+        local highlight = character:FindFirstChildOfClass("Highlight")
+        if not highlight then
+            highlight = Instance.new("Highlight")
+            highlight.Name = "Highlight"
+            highlight.Adornee = character
+            highlight.Parent = character
+        end
+        highlight.FillColor = Color3.fromRGB(255, 0, 0) -- Red color
+        highlight.OutlineColor = Color3.fromRGB(255, 255, 255) -- White outline
+    end
+end
+
+-- Function to remove highlight from a player
+local function removeHighlightFromPlayer(player)
+    local character = player.Character
+    if character then
+        local highlight = character:FindFirstChild("Highlight")
+        if highlight then
+            highlight:Destroy()
+        end
+    end
+end
+
+-- Function to update highlights based on the global toggle
+local function updateHighlight()
+    local isEnabled = getgenv().highlightToggle
+    for _, player in ipairs(game.Players:GetPlayers()) do
+        if isEnabled then
+            highlightPlayer(player)
+        else
+            removeHighlightFromPlayer(player)
+        end
+    end
+end
+
+-- Initial update
+updateHighlight()
+
+-- Monitor player addition and removal
+game.Players.PlayerAdded:Connect(function(player)
+    player.CharacterAdded:Connect(function(character)
+        updateHighlight()
+    end)
+end)
+
+game.Players.PlayerRemoving:Connect(function(player)
+    removeHighlightFromPlayer(player)
+end)
+
+-- Watch for changes to the global toggle
+while true do
+    updateHighlight()
+    wait(1) -- Check every second
+end
+   end,
+})
