@@ -1,5 +1,5 @@
 -- Define main account's username
-local mainAccountUsername = "88l9 -- Replace with your main account's username
+local mainAccountUsername = "88l9" -- Replace with your main account's username
 local altAccountUsername = "887Q" -- Replace with your alt account's username
 
 -- Get services
