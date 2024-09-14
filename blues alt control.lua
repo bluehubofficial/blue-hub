@@ -6,14 +6,14 @@ local altAccountUsername = "887Q" -- Replace with your alt account's username
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
--- Function to teleport the alt account behind the target player, closer this time
+-- Function to teleport the alt account closer behind the target player
 local function teleportBehindTarget(altCharacter, targetCharacter)
     local targetHRP = targetCharacter:FindFirstChild("HumanoidRootPart")
     local altHRP = altCharacter:FindFirstChild("HumanoidRootPart")
 
     if targetHRP and altHRP then
-        -- Calculate the position slightly closer behind the target player
-        local behindPosition = targetHRP.CFrame * CFrame.new(0, 0, 2) -- Adjusted distance
+        -- Position the alt account closer behind the target (closer than before)
+        local behindPosition = targetHRP.CFrame * CFrame.new(0, 0, 2) -- 2 studs behind the target (adjust this to get closer or farther)
         altHRP.CFrame = behindPosition
     end
 end
@@ -29,11 +29,12 @@ local function playAnimation(altCharacter, isR15)
             local track = humanoid:LoadAnimation(animation)
             track:Play()
         else
-            -- R6 custom animation (new ID provided)
+            -- R6 animation (ID: 148831003) with 5x speed
             local animation = Instance.new("Animation")
-            animation.AnimationId = "rbxassetid://148831003" -- Updated R6 animation
+            animation.AnimationId = "rbxassetid://148831003" -- R6 Animation ID
             local track = humanoid:LoadAnimation(animation)
             track:Play()
+            track:AdjustSpeed(5) -- Speed up the animation 5x
         end
     end
 end
@@ -93,7 +94,7 @@ Players.PlayerAdded:Connect(function(player)
     end)
 end)
 
--- For players already in the game when the script runs (optional)
+-- For players already in the game when the script runs
 for _, player in pairs(Players:GetPlayers()) do
     player.Chatted:Connect(function(message)
         onPlayerChatted(player, message)
