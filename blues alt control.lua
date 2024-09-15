@@ -6,11 +6,10 @@ local altAccountUsername = "887Q" -- Replace with your alt account's username
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
--- Keep track of loop connections, follow connections, shield connections, spin connections, and animation tracks
+-- Keep track of loop connections, follow connections, shield connections, and animation tracks
 local bangConnection = nil
 local followConnection = nil
 local shieldConnection = nil
-local spinConnection = nil
 local currentAnimationTrack = nil
 
 -- Function to teleport the alt account closer behind the target player
@@ -72,28 +71,8 @@ local function shieldTarget(altCharacter, targetCharacter)
     end
 end
 
--- Function to make the alt character spin
-local function spinCharacter(altCharacter)
-    local humanoidRootPart = altCharacter:FindFirstChild("HumanoidRootPart") or altCharacter:FindFirstChild("Torso")
-
-    if humanoidRootPart then
-        -- Spin continuously
-        spinConnection = RunService.Stepped:Connect(function()
-            humanoidRootPart.CFrame = humanoidRootPart.CFrame * CFrame.Angles(0, math.rad(10), 0) -- Adjust spin speed by changing the angle
-        end)
-    end
-end
-
--- Function to stop spinning the alt character
-local function unspinCharacter()
-    if spinConnection then
-        spinConnection:Disconnect() -- Stop the spin
-        spinConnection = nil
-    end
-end
-
--- Function to stop any ongoing bang, follow, shield, or spin loop
-local function stopBangAndFollowAndShieldAndSpin()
+-- Function to stop any ongoing bang, follow, or shield loop
+local function stopAllActions()
     if bangConnection then
         bangConnection:Disconnect()
         bangConnection = nil
@@ -105,10 +84,6 @@ local function stopBangAndFollowAndShieldAndSpin()
     if shieldConnection then
         shieldConnection:Disconnect()
         shieldConnection = nil
-    end
-    if spinConnection then
-        spinConnection:Disconnect()
-        spinConnection = nil
     end
     if currentAnimationTrack then
         currentAnimationTrack:Stop()
@@ -159,7 +134,7 @@ local function onPlayerChatted(player, message)
 
                     if targetPlayer and targetPlayer.Character then
                         -- Start looping teleport behind the target player
-                        stopBangAndFollowAndShieldAndSpin() -- Stop any previous actions
+                        stopAllActions() -- Stop any previous bang, follow, or shield loop
 
                         bangConnection = RunService.RenderStepped:Connect(function()
                             teleportBehindTarget(altCharacter, targetPlayer.Character)
@@ -178,7 +153,7 @@ local function onPlayerChatted(player, message)
 
                     if targetPlayer and targetPlayer.Character then
                         -- Start following the target player by walking
-                        stopBangAndFollowAndShieldAndSpin() -- Stop any previous actions
+                        stopAllActions() -- Stop any previous bang, follow, or shield loop
 
                         followConnection = RunService.Heartbeat:Connect(function()
                             followTarget(altCharacter, targetPlayer.Character)
@@ -193,7 +168,7 @@ local function onPlayerChatted(player, message)
 
                     if targetPlayer and targetPlayer.Character then
                         -- Start shielding the target player
-                        stopBangAndFollowAndShieldAndSpin() -- Stop any previous actions
+                        stopAllActions() -- Stop any previous bang, follow, or shield loop
 
                         shieldConnection = RunService.RenderStepped:Connect(function()
                             shieldTarget(altCharacter, targetPlayer.Character)
@@ -201,18 +176,31 @@ local function onPlayerChatted(player, message)
                     end
                 end
 
-                -- Handle "!spin" command
-                if message:lower() == "!spin" then
-                    -- Start spinning the alt character
-                    stopBangAndFollowAndShieldAndSpin() -- Stop any previous actions
-                    spinCharacter(altCharacter)
-                end
-
-                -- Handle "!unspin" command
-                if message:lower() == "!unspin" then
-                    unspinCharacter() -- Stop the spinning
-                end
-
                 -- Handle "!unfollow", "!unbang", and "!unshield" commands
                 if message:lower() == "!unfollow" or message:lower() == "!unbang" or message:lower() == "!unshield" then
-                    stopBangAndFollowAndShieldAndSpin()
+                    stopAllActions() -- Stop following, teleporting behind, or shielding the target
+                end
+
+                -- Handle "!reset" command
+                if message:lower() == "!reset" then
+                    resetAlt() -- Kill the alt account
+                end
+            end
+        end
+    end
+end
+
+-- Connect to the PlayerAdded event for current and new players
+Players.PlayerAdded:Connect(function(player)
+    -- Connect the Chatted event to the new player
+    player.Chatted:Connect(function(message)
+        onPlayerChatted(player, message)
+    end)
+end)
+
+-- For players already in the game when the script runs (optional)
+for _, player in pairs(Players:GetPlayers()) do
+    player.Chatted:Connect(function(message)
+        onPlayerChatted(player, message)
+    end)
+end
