@@ -10,7 +10,12 @@ local RunService = game:GetService("RunService")
 local bangConnection = nil
 local followConnection = nil
 local shieldConnection = nil
+local spinConnection = nil
 local currentAnimationTrack = nil
+
+-- Keep track of whitelisted and blacklisted players
+local whitelistedPlayers = {}
+local blacklistedPlayers = {}
 
 -- Function to teleport the alt account closer behind the target player
 local function teleportBehindTarget(altCharacter, targetCharacter)
@@ -28,10 +33,10 @@ end
 local function playAnimation(altCharacter, isR15)
     local humanoid = altCharacter:FindFirstChild("Humanoid")
     if humanoid then
-        -- R15 animation (ID: 5938365243)
+        -- R15 animation (ID: 10714068222)
         if isR15 then
             local animation = Instance.new("Animation")
-            animation.AnimationId = "rbxassetid://5938365243" -- Updated R15 Animation ID
+            animation.AnimationId = "rbxassetid://10714068222" -- Updated R15 Animation ID
             local track = humanoid:LoadAnimation(animation)
             track:Play()
             track:AdjustSpeed(50) -- Speed up the R15 animation 50x
@@ -71,7 +76,36 @@ local function shieldTarget(altCharacter, targetCharacter)
     end
 end
 
--- Function to stop any ongoing bang, follow, or shield loop
+-- Function to make the alt account spin around its position
+local function spinAlt(altCharacter)
+    local altHRP = altCharacter:FindFirstChild("HumanoidRootPart") or altCharacter:FindFirstChild("Torso")
+
+    if altHRP then
+        local spinAngle = 0
+        local spinSpeed = math.rad(5) -- Increase the spin speed by 5x
+        if spinConnection then
+            spinConnection:Disconnect()
+        end
+        spinConnection = RunService.RenderStepped:Connect(function()
+            if altHRP then
+                spinAngle = spinAngle + spinSpeed
+                altHRP.CFrame = altHRP.CFrame * CFrame.fromEulerAnglesXYZ(0, spinSpeed, 0)
+            end
+        end)
+    end
+end
+
+-- Function to move the alt account to a specific position by teleporting
+local function gotoPosition(altCharacter, position)
+    local altHRP = altCharacter:FindFirstChild("HumanoidRootPart") or altCharacter:FindFirstChild("Torso")
+
+    if altHRP then
+        -- Teleport the alt account to the specified position
+        altHRP.CFrame = CFrame.new(position)
+    end
+end
+
+-- Function to stop any ongoing bang, follow, shield, or spin loop
 local function stopAllActions()
     if bangConnection then
         bangConnection:Disconnect()
@@ -84,6 +118,10 @@ local function stopAllActions()
     if shieldConnection then
         shieldConnection:Disconnect()
         shieldConnection = nil
+    end
+    if spinConnection then
+        spinConnection:Disconnect()
+        spinConnection = nil
     end
     if currentAnimationTrack then
         currentAnimationTrack:Stop()
@@ -104,8 +142,8 @@ end
 
 -- Function to handle chat messages
 local function onPlayerChatted(player, message)
-    -- Check if the message sender is the main account
-    if player.Name == mainAccountUsername then
+    -- Check if the message sender is the main account, a whitelisted player, or not blacklisted
+    if (player.Name == mainAccountUsername or whitelistedPlayers[player.Name]) and not blacklistedPlayers[player.Name] then
         -- Get the main and alt players
         local mainPlayer = Players:FindFirstChild(mainAccountUsername)
         local altPlayer = Players:FindFirstChild(altAccountUsername)
@@ -176,6 +214,33 @@ local function onPlayerChatted(player, message)
                     end
                 end
 
+                -- Handle "!spin" command
+                if message:lower() == "!spin" then
+                    stopAllActions() -- Stop any previous action
+                    spinAlt(altCharacter) -- Start spinning the alt account
+                end
+
+                -- Handle "!unspin" command
+                if message:lower() == "!unspin" then
+                    if spinConnection then
+                        spinConnection:Disconnect()
+                        spinConnection = nil
+                    end
+                end
+
+                -- Handle "!goto (player)" command
+                local gotoCommand, targetUsername = message:match("^(%S+)%s+(%S+)$")
+                if gotoCommand == "!goto" and targetUsername then
+                    local targetPlayer = Players:FindFirstChild(targetUsername)
+
+                    if targetPlayer and targetPlayer.Character then
+                        -- Teleport the alt account to the target player's position
+                        stopAllActions() -- Stop any previous action
+
+                        gotoPosition(altCharacter, targetPlayer.Character.HumanoidRootPart.Position)
+                    end
+                end
+
                 -- Handle "!unfollow", "!unbang", and "!unshield" commands
                 if message:lower() == "!unfollow" or message:lower() == "!unbang" or message:lower() == "!unshield" then
                     stopAllActions() -- Stop following, teleporting behind, or shielding the target
@@ -184,6 +249,26 @@ local function onPlayerChatted(player, message)
                 -- Handle "!reset" command
                 if message:lower() == "!reset" then
                     resetAlt() -- Kill the alt account
+                end
+
+                -- Handle "!whitelist (player)" command
+                local whitelistCommand, targetUsername = message:match("^(%S+)%s+(%S+)$")
+                if whitelistCommand == "!whitelist" and targetUsername then
+                    local targetPlayer = Players:FindFirstChild(targetUsername)
+                    if targetPlayer then
+                        whitelistedPlayers[targetUsername] = true
+                        blacklistedPlayers[targetUsername] = nil -- Remove from blacklist
+                    end
+                end
+
+                -- Handle "!blacklist (player)" command
+                local blacklistCommand, targetUsername = message:match("^(%S+)%s+(%S+)$")
+                if blacklistCommand == "!blacklist" and targetUsername then
+                    local targetPlayer = Players:FindFirstChild(targetUsername)
+                    if targetPlayer then
+                        blacklistedPlayers[targetUsername] = true
+                        whitelistedPlayers[targetUsername] = nil -- Remove from whitelist
+                    end
                 end
             end
         end
