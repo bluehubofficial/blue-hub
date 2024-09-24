@@ -177,7 +177,7 @@ local function createNametag(character)
         textLabel.Parent = nametag
         textLabel.Size = UDim2.new(1, 0, 1, 0)
         textLabel.BackgroundTransparency = 1
-        textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        textLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
         textLabel.TextStrokeTransparency = 0.5
         textLabel.Text = character.Name
         textLabel.TextSize = 20 -- Smaller text size
@@ -239,5 +239,119 @@ Players.PlayerRemoving:Connect(function(player)
         removeNametag(player.Character)
     end
 end)
+   end,
+})
+
+local BoxesToggle = Tab:CreateToggle({
+   Name = "boxes",
+   CurrentValue = false,
+   Flag = "Toggle1", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+   Callback = function(Value)
+   getgenv().ESPEnabled = Value; -- Default state (true = enabled, false = disabled)
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+-- Create a table to hold ESP boxes
+local espBoxes = {}
+
+-- Function to create a 2D ESP box
+local function createESPBox(player)
+    local box = Drawing.new("Square")
+    box.Thickness = 2
+    box.Color = Color3.fromRGB(255, 0, 0)
+    box.Filled = false -- Makes sure it's not filled
+    box.Visible = false
+
+    espBoxes[player] = box
+end
+
+-- Function to remove the ESP box
+local function removeESPBox(player)
+    if espBoxes[player] then
+        espBoxes[player]:Remove()
+        espBoxes[player] = nil
+    end
+end
+
+-- Function to update the ESP boxes
+local function updateESPBox(player, box)
+    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+        local rootPart = player.Character.HumanoidRootPart
+        local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+
+        if humanoid and humanoid.Health > 0 then
+            local rootPos, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
+
+            if onScreen and getgenv().ESPEnabled then
+                local size = Vector3.new(2, 3, 0) * (Camera:WorldToViewportPoint(rootPart.Position - Vector3.new(0, 3, 0)).Y - Camera:WorldToViewportPoint(rootPart.Position + Vector3.new(0, 2.5, 0)).Y)
+
+                box.Size = Vector2.new(size.X, size.Y)
+                box.Position = Vector2.new(rootPos.X - size.X / 2, rootPos.Y - size.Y / 2)
+                box.Visible = true
+            else
+                box.Visible = false
+            end
+        else
+            box.Visible = false
+        end
+    else
+        box.Visible = false
+    end
+end
+
+-- Function to toggle ESP on or off
+local function toggleESP()
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            if getgenv().ESPEnabled and not espBoxes[player] then
+                createESPBox(player)
+            elseif not getgenv().ESPEnabled and espBoxes[player] then
+                removeESPBox(player)
+            end
+        end
+    end
+end
+
+-- Update ESP boxes constantly
+RunService.RenderStepped:Connect(function()
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and espBoxes[player] then
+            updateESPBox(player, espBoxes[player])
+        end
+    end
+end)
+
+-- Toggle ESP with right-click
+local UserInputService = game:GetService("UserInputService")
+UserInputService.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton2 then -- Right-click
+        getgenv().ESPEnabled = not getgenv().ESPEnabled
+        toggleESP() -- Refresh the ESP status
+    end
+end)
+
+-- Player handling (create ESP when a new player joins)
+Players.PlayerAdded:Connect(function(player)
+    player.CharacterAdded:Connect(function()
+        wait(1) -- Wait for character to load
+        if getgenv().ESPEnabled then
+            createESPBox(player)
+        end
+    end)
+end)
+
+Players.PlayerRemoving:Connect(function(player)
+    removeESPBox(player)
+end)
+
+-- Initial ESP setup for current players
+for _, player in pairs(Players:GetPlayers()) do
+    if player ~= LocalPlayer and player.Character then
+        createESPBox(player)
+    end
+end
    end,
 })
